@@ -1,0 +1,93 @@
+!=============================================================!  FLTR.f90!  3-D GROUNDWATER FLOW & CONTAMINANT TRANSPORT  – MAIN DRIVER!  Designed to be compiled as a shared library and called from R!=============================================================SUBROUTINE FLTR(NRO, NCO, NTC,                          &IB,  IE,  JBEI, KBEI, IBB,  IEB,        &JB,  JE,  IBEJ, KBEJ, JBB,  JEB,        &KB,  KE,  IBEK, JBEK, KBB,  KEB,        &DELTAX, DELTAY, DELTAZ,                   &dt,  nt,                                  &B,   BCP,  BCT,                           &KX,  KY,   KZ,  SS,                      &H3D, C3D,                                 &X,   Y,    Z,                             &TEL, Dm,   ALFAL, ALFATV, ALFATH,         &GAMA, Rd,  POR,   D3D,   TETA)
+
+IMPLICIT NONE
+
+!----------------------------------------------------------
+! PARAMETER
+!----------------------------------------------------------
+INTEGER, PARAMETER :: mx = 100
+
+!----------------------------------------------------------
+! SCALAR INTEGERS
+!----------------------------------------------------------
+INTEGER, INTENT(IN)    :: NRO, NCO, NTC, nt
+
+!----------------------------------------------------------
+! INTEGER ARRAYS  (mx x mx)
+!----------------------------------------------------------
+INTEGER, INTENT(INOUT) :: IB(mx,mx),   IE(mx,mx)
+INTEGER, INTENT(INOUT) :: JBEI(mx,mx), KBEI(mx,mx)
+INTEGER, INTENT(INOUT) :: IBB(mx,mx),  IEB(mx,mx)
+INTEGER, INTENT(INOUT) :: JB(mx,mx),   JE(mx,mx)
+INTEGER, INTENT(INOUT) :: IBEJ(mx,mx), KBEJ(mx,mx)
+INTEGER, INTENT(INOUT) :: JBB(mx,mx),  JEB(mx,mx)
+INTEGER, INTENT(INOUT) :: KB(mx,mx),   KE(mx,mx)
+INTEGER, INTENT(INOUT) :: IBEK(mx,mx), JBEK(mx,mx)
+INTEGER, INTENT(INOUT) :: KBB(mx,mx),  KEB(mx,mx)
+INTEGER, INTENT(INOUT) :: B(mx)
+
+!----------------------------------------------------------
+! DOUBLE PRECISION SCALARS
+!----------------------------------------------------------
+DOUBLE PRECISION, INTENT(IN)    :: dt, TEL
+DOUBLE PRECISION, INTENT(IN)    :: Dm, ALFAL, ALFATV, ALFATH
+DOUBLE PRECISION, INTENT(IN)    :: GAMA, Rd, SS, POR, D3D
+DOUBLE PRECISION, INTENT(IN)    :: KX, KY, KZ, TETA
+
+!----------------------------------------------------------
+! DOUBLE PRECISION ARRAYS
+!----------------------------------------------------------
+DOUBLE PRECISION, INTENT(INOUT) :: H3D(mx,mx,mx)
+DOUBLE PRECISION, INTENT(INOUT) :: C3D(mx,mx,mx)
+DOUBLE PRECISION, INTENT(IN)    :: X(mx,mx,mx)
+DOUBLE PRECISION, INTENT(IN)    :: Y(mx,mx,mx)
+DOUBLE PRECISION, INTENT(IN)    :: Z(mx,mx,mx)
+DOUBLE PRECISION, INTENT(IN)    :: DELTAX(mx,mx,mx)
+DOUBLE PRECISION, INTENT(IN)    :: DELTAY(mx,mx,mx)
+DOUBLE PRECISION, INTENT(IN)    :: DELTAZ(mx,mx,mx)
+DOUBLE PRECISION, INTENT(INOUT) :: BCP(mx)
+DOUBLE PRECISION, INTENT(INOUT) :: BCT(mx)
+
+!----------------------------------------------------------
+! STEP 1 – Build geometry connectivity
+!----------------------------------------------------------
+CALL GEO(NRO, NCO, NTC,                              &
+         IB,  IE,  JBEI, KBEI, IBB,  IEB,           &
+         JB,  JE,  IBEJ, KBEJ, JBB,  JEB,           &
+         KB,  KE,  IBEK, JBEK, KBB,  KEB)
+
+!----------------------------------------------------------
+! STEP 2 – Read / set physical & transport parameters
+!----------------------------------------------------------
+CALL PHTRDATA(DELTAX, DELTAY, DELTAZ,                &
+              dt, nt, B, BCP, BCT,                   &
+              KX, KY, KZ, SS,                        &
+              NRO, NCO, NTC,                         &
+              X, Y, Z, TEL,                          &
+              Dm, ALFAL, ALFATV, ALFATH,             &
+              GAMA, Rd, POR, D3D, TETA)
+
+!----------------------------------------------------------
+! STEP 3 – Set initial conditions
+!----------------------------------------------------------
+CALL ICPHL(NRO, NCO, NTC, H3D, C3D, X, Y, Z)
+
+!----------------------------------------------------------
+! STEP 4 – Time-march flow + transport
+!----------------------------------------------------------
+CALL PHTR(DELTAX, DELTAY, DELTAZ,                    &
+          dt, nt,                                     &
+          NRO, NCO, NTC,                             &
+          IB,  IE,  JBEI, KBEI, IBB,  IEB,          &
+          JB,  JE,  IBEJ, KBEJ, JBB,  JEB,          &
+          KB,  KE,  IBEK, JBEK, KBB,  KEB,          &
+          B,   BCP,  BCT,                            &
+          KX,  KY,   KZ,  SS,                       &
+          H3D, C3D,                                  &
+          X,   Y,    Z,   TEL,                       &
+          Dm,  ALFAL, ALFATV, ALFATH,                &
+          GAMA, Rd,  POR, D3D, TETA)
+
+RETURN
+
+END SUBROUTINE FLTR
